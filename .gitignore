@@ -1,1 +1,3 @@
+# O arquivo de configuração é ignorado para evitar que acidentalmente commitemos dados pessoais no repositório
 movemail.conf.php
+mailbox/*

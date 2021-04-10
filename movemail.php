@@ -122,13 +122,21 @@ class Movemail {
                     if ($deststream)  {             
                         $headers = imap_headers($sourcestream);
                         $total = count($headers);
-                        echo "$total mensagens.\n";
+                        echo "$total mensagens. ";
 
+                        @mkdir('mailbox');
                         $mailbox_nmsg = 'mailbox/'.$pasta_destino.'.nmsg';
-                        $apartir = 0;
-                        if ( is_file($mailbox_nmsg) ) {
-                            $apartir = readfile($mailbox_nmsg);
+                        if ( $apartir == 0 && is_file($mailbox_nmsg) ) {
+                            $apartir = file_get_contents($mailbox_nmsg);
                         }
+
+                        // OK significa que toda a pasta foi copiada, dai saimos fora
+                        if ($apartir === 'OK') {
+                            echo "OK!\n";
+                            return;
+                        }
+
+                        echo "\n";
 
                         $n = 0;
                         if ($headers) {
@@ -136,8 +144,8 @@ class Movemail {
                                 $n = $key+1;
                                 echo '📧 '.date('d/m/Y H:i:s')." | $pasta_destino | $n/$total | ";
 
-                                if ($apartir > $n) {
-                                    echo "Pulando rapidamente...\n";
+                                if ($apartir >= $n) {
+                                    echo "Pulando rapidamente para $apartir...\n";
                                     continue;
                                 }
                                 
@@ -159,6 +167,7 @@ class Movemail {
                                             echo "Não é possível setar a flag \\SEEN";
                                         }
                                         
+                                        // Marcar o numero da mensagem
                                         $this->gravar_dados($n, $mailbox_nmsg);
                                         echo "OK\n";
 
@@ -169,6 +178,9 @@ class Movemail {
                                 }
                                 $n++;
                             }
+
+                            // Marcar que toda a pasta foi completada
+                            $this->gravar_dados('OK', $mailbox_nmsg);
                         }
                     }
 
@@ -182,12 +194,12 @@ class Movemail {
     // Funcao para gravar dados no disco
 	public function gravar_dados($conteudo, $nmArquivo = "DADOS.txt") {
 		$local_arquivo = $nmArquivo;
-		$fd = fopen($local_arquivo, "a");
+		$fd = fopen($local_arquivo, "w");
 		fwrite($fd, $conteudo);
 		fclose($fd);
 	}
 
-    public function migrar($apartir = 0) {
+    public function migrar() {
         echo "😎 ".date('d/m/Y H:i:s').": Iniciando Migração de Mensagens de E-mail...\n";
 
         // Lista pastas e migrando mensagens
@@ -199,7 +211,7 @@ class Movemail {
                 continue;
             }
 
-            $this->copiar($pasta_origem, '', $apartir);
+            $this->copiar($pasta_origem, '');
         }
 
         echo "🏆 ".date('d/m/Y H:i:s').": Migração Concluída!\n";
